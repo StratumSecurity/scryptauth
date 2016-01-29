@@ -62,7 +62,7 @@ and decoded from hashed values.
 ### Parameters
 
 The scrypt algorithm accepts three parameters that are used to configure its complexity, and can be changed
-to hash new passwords more strongly as computational resources improve.
+to hash new passwords more strongly as computational resources improve. It also accepts data obtained from a random source and a key length to stretch (if necessary) the output length to).
 
 1. `salt`: A cryptographically-secure random salt (random bytes) is appended to add randomness. At least 4 truly random bytes are suggested.
 2. `N`: This is a CPU/memory cost parameter. It must be a power of 2 greater than 1. 16384 is commonly used.
@@ -91,6 +91,7 @@ Below are a list of guidelines for implementing functions to parse the output fo
 * No assumptions should be made about any fields except for the `$4s$` prefix
 * Use your language's standard library's string splitting function to split pieces on the `$` character
 * Use a standard library function to check that `N` is a power of 2, e.g. using log(base=2, N)
+* Check that `r * p > 0` to prevent incorrect behavior resulting from multiplying large `r` and `p`
 * Check that `r * p < 1073741824` (`1073741824` = `2^30`)
 * Derive the `keyLen` parameter from the length of the decoded `h(password)`, i.e. `keyLen = len(b64_decode(b64(h(password))))`
 * Implement a *constant time comparison* between the hash of the input password and the previously hashed value
