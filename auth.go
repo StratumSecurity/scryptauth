@@ -70,7 +70,7 @@ func verifyParameterValidity(parameters HashConfiguration) error {
 		return ErrInvalidPValue
 	}
 	product := parameters.R * parameters.P
-	if product <= 0 || product > MaxP+1 {
+	if product <= 0 || product > MaxP {
 		return ErrInvalidRPValues
 	}
 	// Check that the salt is long enough
