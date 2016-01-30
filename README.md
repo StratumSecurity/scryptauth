@@ -77,11 +77,11 @@ prepending parameters for the hash function to the front of the output, similar 
 
 The format is as follows:
 
-    $4s$salt$N$r$p$b64(h(password))
+    $4s$salt$N$r$p$h(password)
 
 Here, `$4s$` is a special prefix that will identify this library, and the salt, `N`, `r`, and `p` are prepended
-directly to the output in that order. Each value is separated by the `$` character and none of the
-values are encoded further (e.g. to hex/base64). Finally, the output of the scrypt KDF, `h(password)`
+directly to the output in that order. Each value is separated by the `$` character and none of N, r, or p
+are encoded (e.g. to hex/base64). The salt is encoded to base64. Finally, the output of the scrypt KDF, `h(password)`
 is appended to the output following the final `$` separator. `h(password)` *will be encoded to base64*.
 
 ### Parsing
