@@ -244,7 +244,7 @@ func TestCompareHashAndPassword(t *testing.T) {
  */
 
 func TestDecodingEncodedParameters(t *testing.T) {
-	t.Log("integration encodeParameters <-> decodeParameters")
+	fmt.Println("testing integration encodeParameters <-> decodeParameters")
 
 	t.Log("\tDecoding should be the inverse of encoding")
 	testHashedValue := []byte("ABCDEF0123456789ABCDEF0123456789")
