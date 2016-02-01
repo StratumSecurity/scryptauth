@@ -19,11 +19,8 @@ func TestNewHashConfiguration(t *testing.T) {
 	// Use the container type directly instead of redeclaring a struct here.
 	passingTests := []HashConfiguration{
 		// N, r, p, saltLen, keyLen
-		{16384, 8, 1, 4, 32},       // Recommended values in 2009
-		{32, 100, 10, 32, 64},      // Arbitrary
-		{8, 1073741823, 1, 5, 128}, // r = MaxR
-		{16, 1, 1073741823, 4, 32}, // p = MaxP
-		{128, 32768, 32767, 4, 32}, // r * p = 2^30 - 1
+		{16384, 8, 1, 4, 32},  // Recommended values in 2009
+		{32, 100, 10, 32, 64}, // Arbitrary
 	}
 	for i, test := range passingTests {
 		_, err := NewHashConfiguration(
@@ -36,12 +33,11 @@ func TestNewHashConfiguration(t *testing.T) {
 	t.Log("\tIt should produce errors for parameters that don't satisfy the requirements")
 	failingTests := []HashConfiguration{
 		// N, r, p, saltLen, keyLen
-		{33, 8, 1, 4, 32},         // N not quite a power of 2
-		{32, -10, 1, 4, 32},       // r < 0
-		{32, 8, -10, 4, 32},       // p < 0
-		{32, 32768, 32768, 4, 32}, // r * p == 2^30
-		{32, 8, 1, 2, 32},         // saltLen < MinSaltLen
-		{32, 8, 1, 4, 16},         // keyLen < MinKeyLen
+		{33, 8, 1, 4, 32},   // N not quite a power of 2
+		{32, -10, 1, 4, 32}, // r < 0
+		{32, 8, -10, 4, 32}, // p < 0
+		{32, 8, 1, 2, 32},   // saltLen < MinSaltLen
+		{32, 8, 1, 4, 16},   // keyLen < MinKeyLen
 	}
 	for i, test := range failingTests {
 		_, err := NewHashConfiguration(
@@ -181,12 +177,11 @@ func TestGenerateFromPassword(t *testing.T) {
 	t.Log("\tIt should return an error if a parameter is invalid")
 	failingTests := []HashConfiguration{
 		// N, r, p, saltLen, keyLen
-		{33, 8, 1, 4, 32},         // N not quite a power of 2
-		{32, -10, 1, 4, 32},       // r < 0
-		{32, 8, -10, 4, 32},       // p < 0
-		{32, 32768, 32768, 4, 32}, // r * p == 2^30
-		{32, 8, 1, 2, 32},         // saltLen < MinSaltLen
-		{32, 8, 1, 4, 16},         // keyLen < MinKeyLen
+		{33, 8, 1, 4, 32},   // N not quite a power of 2
+		{32, -10, 1, 4, 32}, // r < 0
+		{32, 8, -10, 4, 32}, // p < 0
+		{32, 8, 1, 2, 32},   // saltLen < MinSaltLen
+		{32, 8, 1, 4, 16},   // keyLen < MinKeyLen
 	}
 	for i, test := range failingTests {
 		_, err := GenerateFromPassword([]byte("t3st!nG12345"), test)
@@ -198,11 +193,8 @@ func TestGenerateFromPassword(t *testing.T) {
 	t.Log("\tIt should not produce any errors if the provided parameters are valid")
 	passingTests := []HashConfiguration{
 		// N, r, p, saltLen, keyLen
-		{16384, 8, 1, 4, 32},       // Recommended values in 2009
-		{32, 100, 10, 32, 64},      // Arbitrary
-		{8, 1073741823, 1, 5, 128}, // r = MaxR
-		{16, 1, 1073741823, 4, 32}, // p = MaxP
-		{128, 32768, 32767, 4, 32}, // r * p = 2^30 - 1
+		{16384, 8, 1, 4, 32}, // Recommended values in 2009
+		{32, 100, 10, 8, 64}, // Arbitrary
 	}
 	for i, test := range passingTests {
 		_, err := GenerateFromPassword([]byte("t3st!nG12345"), test)
@@ -255,7 +247,7 @@ func TestDecodingEncodedParameters(t *testing.T) {
 	t.Log("integration encodeParameters <-> decodeParameters")
 
 	t.Log("\tDecoding should be the inverse of encoding")
-	testHashedValue := []byte("QUJDREVGMDEyMzQ1Njc4OUFCQ0RFRjAxMjM0NTY3ODk=")
+	testHashedValue := []byte("ABCDEF0123456789ABCDEF0123456789")
 	testSalt := []byte("QUJDRA==")
 	testParams := HashConfiguration{16384, 8, 1, 8, 32} // N, r, p, saltLen, keyLen
 	encoded := encodeParameters(testHashedValue, testSalt, testParams)
