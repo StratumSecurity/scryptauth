@@ -45,19 +45,115 @@ and decoded from hashed values.
 1. [Constants](https://github.com/StratumSecurity/scrypt_auth_go/blob/master/README.md#constants)
 2. [Variables](https://github.com/StratumSecurity/scrypt_auth_go/blob/master/README.md#variables)
 3. [Functions](https://github.com/StratumSecurity/scrypt_auth_go/blob/master/README.md#functions)
+  * [DefaultHashConfiguration](https://github.com/StratumSecurity/scrypt_auth_go/blob/master/README.md#defaulthashconfiguration)
+  * [NewHashConfiguration](https://github.com/StratumSecurity/scrypt_auth_go/blob/master/README.md#newhashconfiguration)
+  * [GenerateFromPassword](https://github.com/StratumSecurity/scrypt_auth_go/blob/master/README.md#generatefrompassword)
+  * [CompareHashAndPassword](https://github.com/StratumSecurity/scrypt_auth_go/blob/master/README.md#comparehashandpassword)
 4. [Types](https://github.com/StratumSecurity/scrypt_auth_go/blob/master/README.md#types)
 
 ### Constants
 
+```go
+const (
+	MinN           HashParameter = 4          // 2^2,  the minimum allowable N value
+	MaxN           HashParameter = 2147483648 // 2^31, the maximum N value we can contain in an int
+	MinR           HashParameter = 1          // 2^0,  the minimum r value possible, corresponding to 1 <= p <= MaxP
+	MaxR           HashParameter = 1073741823 // 2^30 - 1, the maximum r value possible, requiring p = 1
+	MinP           HashParameter = 1          // 2^0,  the minimum p value possible, corresponding to 1 <= r <= MaxR
+	MaxP           HashParameter = 1073741823 // 2^30 - 1, the maximum p value possible, requiring r = 1
+	MinKeyLen      HashParameter = 32         // the minimum number of bytes a key should contain, corresponds to 256 bits
+	MinSaltLen     HashParameter = 8          // the minimum length of a salt, 8 bytes
+	DefaultSaltLen HashParameter = 8          // the default length of a salt, 8 bytes
+	DefaultKeyLen  HashParameter = 32         // the default number of bytes a key will contain
+	DefaultN       HashParameter = 32768      // 2^15, a default N value. 2^14 was the recommended value in 2009
+	DefaultR       HashParameter = 8          // the default r value recommended in 2009 (pertains to parallelization)
+	DefaultP       HashParameter = 1          // the default p value recommended in 2009 (pertains to parallelization)
+)
+```
 
 ### Variables
 
+```go
+var (
+	ErrInvalidNValue             = errors.New("scrypt/auth: N parameter must be between 2^2 and 2^31 inclusive, and be a power of 2")
+	ErrInvalidRValue             = errors.New("scrypt/auth: r parameter must be between 2^0 and 2^30 inclusive")
+	ErrInvalidPValue             = errors.New("scrypt/auth: p parameter must be between 2^0 and 2^30 inclusive")
+	ErrInvalidRPValues           = errors.New("scrypt/auth: The r and p parameters must be such that r * p < 2^30")
+	ErrKeyTooShort               = errors.New("scrypt/auth: The minimum allowed key length is 32 bytes, or 256 bits")
+	ErrSaltTooShort              = errors.New("scrypt/auth: The minimum allowed salt length is 8 bytes or 64 bits")
+	ErrInvalidHashFormat         = errors.New("scrypt/auth: The expected hashed value format is $4s$salt$N$r$p$hashedPassword")
+	ErrMismatchedHashAndPassword = errors.New("scrypt/auth: The supplied password does not match the hashed secret")
+	ErrMissingPrefix             = errors.New("scrypt/auth: Hashed password is not prefixed with the expected $4s$ sequence")
+	ErrInsufficientRandomData    = errors.New("scrypt/auth: Not enough random data is available to securely hash passwords")
+)
+```
 
 ### Functions
 
+#### DefaultHashConfiguration
+
+[View source](https://github.com/StratumSecurity/scrypt_auth_go/blob/master/auth.go#L157)
+
+```go
+func DefaultHashConfiguration() HashConfiguration
+```
+
+Produces a set of parameters that are safe to use to configure scrypt with.
+
+#### NewHashConfiguration
+
+[View source](https://github.com/StratumSecurity/scrypt_auth_go/blob/master/auth.go#L172)
+
+```go
+func NewHashConfiguration(n, r, p, saltLen, keyLen HashParameter) (HashConfiguration, error)
+```
+
+Produces a new set of parameters with the values provided. It will check that the
+parameter values provided satisfy scrypt (and this library)'s requirements, and
+return an error if they do not.
+
+#### GenerateFromPassword
+
+[View source](https://github.com/StratumSecurity/scrypt_auth_go/blob/master/auth.go#L186)
+
+```go
+func GenerateFromPassword(password []byte, parameters HashConfiguration) ([]byte, error)
+```
+
+Creates a slice of bytes containing the encoded scrypt parameters including a
+cryptographically secure random salt of the specified length. An error may be
+returned if the parameters are invalid, the function is unable to read enough
+random bytes, or scrypt encouners an error.
+
+#### CompareHashAndPassword
+
+[View source](https://github.com/StratumSecurity/scrypt_auth_go/blob/master/auth.go#L220)
+
+```go
+func CompareHashAndPassword(hashedPassword, password []byte) error
+```
+
+Hashes the input password with the same salt and parameters used to encode the already
+hashed password and carries out a constant-time comparison to check if the results
+are equal. The function returns `nil` if no error occurs and the password matched.
+Errors will be returned if the hashed password is not encoded as expected, scrypt
+encounters a problem, or the password does not match the hashed password.
 
 ### Types
 
+```go
+type HashParameter int
+```
+
+```go
+type HashConfiguration struct {
+	N       HashParameter
+	R       HashParameter
+	P       HashParameter
+	SaltLen HashParameter
+	KeyLen  HashParameter
+}
+```
 
 ## Encoding
 
