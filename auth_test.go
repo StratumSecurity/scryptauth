@@ -3,6 +3,7 @@ package auth
 import (
 	"bytes"
 	"encoding/base64"
+	"fmt"
 	"strconv"
 	"testing"
 )
@@ -12,7 +13,7 @@ import (
  */
 
 func TestNewHashConfiguration(t *testing.T) {
-	t.Log("function NewHashConfiguration")
+	fmt.Println("Testing function NewHashConfiguration")
 
 	t.Log("\tIt should not produce any errors for valid sets of parameters")
 	// Use the container type directly instead of redeclaring a struct here.
@@ -52,7 +53,7 @@ func TestNewHashConfiguration(t *testing.T) {
 }
 
 func TestEncodeParameters(t *testing.T) {
-	t.Log("function encodeParameters")
+	fmt.Println("Testing function encodeParameters")
 
 	t.Log("\tIt should prefix output with $4s$")
 	testParams := DefaultHashConfiguration()
@@ -117,16 +118,16 @@ func TestEncodeParameters(t *testing.T) {
 }
 
 func TestDecodeParameters(t *testing.T) {
-	t.Log("function decodeParameters")
+	fmt.Println("Testing function decodeParameters")
 
 	t.Log("\tIt should return ErrMissingPrefix if the input does not start with $4s$")
-	_, _, err := decodeParameters([]byte("salt$16384$8$1$ABCDEFABCDEFABCDEFABCDEFABCDEF01"))
+	_, _, err := decodeParameters([]byte("QUJDRA==$16384$8$1$QUJDREVGMDEyMzQ1Njc4OUFCQ0RFRjAxMjM0NTY3ODk="))
 	if err != ErrMissingPrefix {
 		t.Error("\t\tExpected to get ErrMissingPrefix, got %v", err)
 	}
 
 	t.Log("\tIt should return ErrInvalidHashFormat if any parts are missing")
-	_, _, err = decodeParameters([]byte("$4s$16384$8$1$ABCDEFABCDEFABCDEFABCDEFABCDEF01")) // No salt
+	_, _, err = decodeParameters([]byte("$4s$16384$8$1$QUJDREVGMDEyMzQ1Njc4OUFCQ0RFRjAxMjM0NTY3ODk=")) // No salt
 	if err != ErrInvalidHashFormat {
 		t.Error("\t\tExpected to get ErrInvalidHashFormat, got %v", err)
 	}
@@ -139,12 +140,12 @@ func TestDecodeParameters(t *testing.T) {
 		Encoded     string
 		ExpectedErr error
 	}{
-		{"$4s$ab$16384$8$1$ABCDEFABCDEFABCDEFABCDEFABCDEF01", ErrSaltTooShort},
-		{"$4s$abcd$123$8$1$ABCDEFABCDEFABCDEFABCDEFABCDEF01", ErrInvalidNValue},
-		{"$4s$abcd$16384$1073741824$1$ABCDEFABCDEFABCDEFABCDEFABCDEF01", ErrInvalidRValue},
-		{"$4s$abcd$16384$1$1073741824$ABCDEFABCDEFABCDEFABCDEFABCDEF01", ErrInvalidPValue},
-		{"$4s$abcd$16384$32768$32768$ABCDEFABCDEFABCDEFABCDEFABCDEF01", ErrInvalidRPValues},
-		{"$4s$abcd$16384$8$1$tooshort", ErrKeyTooShort},
+		{"$4s$QUI=$16384$8$1$QUJDREVGMDEyMzQ1Njc4OUFCQ0RFRjAxMjM0NTY3ODk=", ErrSaltTooShort},
+		{"$4s$QUJDRA==$123$8$1$QUJDREVGMDEyMzQ1Njc4OUFCQ0RFRjAxMjM0NTY3ODk=", ErrInvalidNValue},
+		{"$4s$QUJDRA==$16384$1073741824$1$QUJDREVGMDEyMzQ1Njc4OUFCQ0RFRjAxMjM0NTY3ODk=", ErrInvalidRValue},
+		{"$4s$QUJDRA==$16384$1$1073741824$QUJDREVGMDEyMzQ1Njc4OUFCQ0RFRjAxMjM0NTY3ODk=", ErrInvalidPValue},
+		{"$4s$QUJDRA==$16384$32768$32768$QUJDREVGMDEyMzQ1Njc4OUFCQ0RFRjAxMjM0NTY3ODk=", ErrInvalidRPValues},
+		{"$4s$QUJDRA==$16384$8$1$tooshort", ErrKeyTooShort},
 	}
 	for i, test := range tests {
 		_, _, decodeErr := decodeParameters([]byte(test.Encoded))
@@ -154,11 +155,11 @@ func TestDecodeParameters(t *testing.T) {
 	}
 
 	t.Log("\tIt should produce a valid HashConfiguration and salt if decoding succeeds")
-	params, salt, err := decodeParameters([]byte("$4s$abcdef01$16384$8$1$ABCDEFABCDEFABCDEFABCDEFABCDEF01"))
+	params, salt, err := decodeParameters([]byte("$4s$QUJDREVG$16384$8$1$QUJDREVGMDEyMzQ1Njc4OUFCQ0RFRjAxMjM0NTY3ODk="))
 	if err != nil {
 		t.Error(err)
 	} else {
-		expectedSalt, _ := base64.StdEncoding.DecodeString("abcdef01")
+		expectedSalt, _ := base64.StdEncoding.DecodeString("QUJDREVG")
 		if !bytes.Equal(salt, expectedSalt) {
 			t.Error("\t\tSalt was decoded incorrectly")
 		}
@@ -175,7 +176,7 @@ func TestDecodeParameters(t *testing.T) {
 }
 
 func TestGenerateFromPassword(t *testing.T) {
-	t.Log("function GenerateFromPassword")
+	fmt.Println("Testing function GenerateFromPassword")
 
 	t.Log("\tIt should return an error if a parameter is invalid")
 	failingTests := []HashConfiguration{
@@ -212,21 +213,21 @@ func TestGenerateFromPassword(t *testing.T) {
 }
 
 func TestCompareHashAndPassword(t *testing.T) {
-	t.Log("function CompareHashAndPassword")
+	fmt.Println("Testing function CompareHashAndPassword")
 
 	t.Log("\tIt should return an error if the hashed password is not encoded properly")
 	decodeFailTests := []string{
-		"4s$SALTSALT$16384$8$1$ABCDEF0123456789ABCDEF0123456789",           // Incorrect prefix
-		"SALTSALT$16384$8$1$ABCDEF0123456789ABCDEF0123456789",              // Missing prefix
-		"$4s$16384$8$1$ABCDEF0123456789ABCDEF0123456789",                   // Missing salt
-		"$4s$SAL$16384$8$1$ABCDEF0123456789ABCDEF0123456789",               // Salt too short
-		"$4s$SALTSALT$abcdef$8$1$ABCDEF0123456789ABCDEF0123456789",         // Non-numeric N
-		"$4s$SALTSALT$1638$8$1$ABCDEF0123456789ABCDEF0123456789",           // Invalid N
-		"$4s$SALTSALT$16384$r$1$ABCDEF0123456789ABCDEF0123456789",          // Non-numeric r
-		"$4s$SALTSALT$16384$1073741824$1$ABCDEF0123456789ABCDEF0123456789", // Invalid r
-		"$4s$SALTSALT$16384$8$p$ABCDEF0123456789ABCDEF0123456789",          // Non-numeric p
-		"$4s$SALTSALT$16384$8$1073741824$ABCDEF0123456789ABCDEF0123456789", // Invalid p
-		"$4s$SALTSALT$16384$8$1$ABCDEF0123456789",                          // Key too short
+		"4s$QUJDRA==$16384$8$1$QUJDREVGMDEyMzQ1Njc4OUFCQ0RFRjAxMjM0NTY3ODk=",           // Incorrect prefix
+		"QUJDRA==$16384$8$1$QUJDREVGMDEyMzQ1Njc4OUFCQ0RFRjAxMjM0NTY3ODk=",              // Missing prefix
+		"$4s$16384$8$1$QUJDREVGMDEyMzQ1Njc4OUFCQ0RFRjAxMjM0NTY3ODk=",                   // Missing salt
+		"$4s$QUI=$16384$8$1$QUJDREVGMDEyMzQ1Njc4OUFCQ0RFRjAxMjM0NTY3ODk=",              // Salt too short
+		"$4s$QUJDRA==$abcdef$8$1$QUJDREVGMDEyMzQ1Njc4OUFCQ0RFRjAxMjM0NTY3ODk=",         // Non-numeric N
+		"$4s$QUJDRA==$1638$8$1$QUJDREVGMDEyMzQ1Njc4OUFCQ0RFRjAxMjM0NTY3ODk=",           // Invalid N
+		"$4s$QUJDRA==$16384$r$1$QUJDREVGMDEyMzQ1Njc4OUFCQ0RFRjAxMjM0NTY3ODk=",          // Non-numeric r
+		"$4s$QUJDRA==$16384$1073741824$1$QUJDREVGMDEyMzQ1Njc4OUFCQ0RFRjAxMjM0NTY3ODk=", // Invalid r
+		"$4s$QUJDRA==$16384$8$p$QUJDREVGMDEyMzQ1Njc4OUFCQ0RFRjAxMjM0NTY3ODk=",          // Non-numeric p
+		"$4s$QUJDRA==$16384$8$1073741824$QUJDREVGMDEyMzQ1Njc4OUFCQ0RFRjAxMjM0NTY3ODk=", // Invalid p
+		"$4s$QUJDRA==$16384$8$1$ABCDEF0123456789",                                      // Key too short
 	}
 	for i, test := range decodeFailTests {
 		err := CompareHashAndPassword([]byte(test), []byte("t3st!nG12345"))
@@ -236,7 +237,7 @@ func TestCompareHashAndPassword(t *testing.T) {
 	}
 
 	t.Log("\tIt should return ErrMismatchedHashAndPassword if passwords don't match")
-	testEncoding := []byte("$4s$SALTSALT$16384$8$1$ABCDEF0123456789ABCDEF0123456789")
+	testEncoding := []byte("$4s$QUJDRA==$16384$8$1$QUJDREVGMDEyMzQ1Njc4OUFCQ0RFRjAxMjM0NTY3ODk=")
 	compareErr := CompareHashAndPassword(testEncoding, []byte("t3st!nG12345"))
 	if compareErr != ErrMismatchedHashAndPassword {
 		t.Errorf("\t\tExpected ErrMismatchedHashAndPassword, got %v", compareErr)
@@ -254,8 +255,8 @@ func TestDecodingEncodedParameters(t *testing.T) {
 	t.Log("integration encodeParameters <-> decodeParameters")
 
 	t.Log("\tDecoding should be the inverse of encoding")
-	testHashedValue := []byte("ABCDEF0123456789ABCDEF0123456789")
-	testSalt := []byte("TESTSALT")
+	testHashedValue := []byte("QUJDREVGMDEyMzQ1Njc4OUFCQ0RFRjAxMjM0NTY3ODk=")
+	testSalt := []byte("QUJDRA==")
 	testParams := HashConfiguration{16384, 8, 1, 8, 32} // N, r, p, saltLen, keyLen
 	encoded := encodeParameters(testHashedValue, testSalt, testParams)
 	decodedParams, decodedSalt, err := decodeParameters(encoded)
@@ -284,7 +285,7 @@ func TestDecodingEncodedParameters(t *testing.T) {
 }
 
 func TestComparingGeneratedPasswords(t *testing.T) {
-	t.Log("integration GenerateFromPassword <-> CompareHashAndPassword")
+	fmt.Println("Testing integration GenerateFromPassword <-> CompareHashAndPassword")
 
 	t.Log("\tA generated hashed value should validate against the password provided")
 	testPassword := []byte("t3st!nG12345")
