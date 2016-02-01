@@ -39,6 +39,7 @@ var (
 	ErrInvalidHashFormat         = errors.New("scrypt/auth: The expected hashed value format is $4s$salt$N$r$p$hashedPassword")
 	ErrMismatchedHashAndPassword = errors.New("scrypt/auth: The supplied password does not match the hashed secret")
 	ErrMissingPrefix             = errors.New("scrypt/auth: Hashed password is not prefixed with the expected $4s$ sequence")
+	ErrInsufficientRandomData    = errors.New("scrypt/auth: Not enough random data is available to securely hash passwords")
 )
 
 /**
@@ -57,9 +58,9 @@ type HashConfiguration struct {
  */
 func verifyParameterValidity(parameters HashConfiguration) error {
 	// Check that N is in the allowed range and a power of 2
-	exponent := math.Log2(parameters.N)
+	exponent := math.Log2(float64(parameters.N))
 	isWhole := exponent == math.Trunc(exponent)
-	if n < MinN || n > MaxN || !isWhole {
+	if parameters.N < MinN || parameters.N > MaxN || !isWhole {
 		return ErrInvalidNValue
 	}
 	// Check that r and p are positive integers less than 2^30 and that r * p < 2^30
@@ -89,53 +90,63 @@ func encodeParameters(hashedValue, salt []byte, parameters HashConfiguration) []
 	// encoded will grow as we call append.
 	encoded := make([]byte, 0)
 	encoded = append(encoded, []byte("$4s$")...)
-	encSalt = []byte(base64.StdEncoding.EncodeToString(salt))
+	encSalt := []byte(base64.StdEncoding.EncodeToString(salt))
 	encoded = append(encoded, encSalt...)
-	encN := []byte(strconv.Itoa(parameters.N))
-	encR := []byte(strconv.Itoa(parameters.R))
-	encP := []byte(strconv.Itoa(parameters.P))
-	encoded = append(encoded, sep, encN, sep, encR, sep, encP, sep)
+	encN := []byte(strconv.Itoa(int(parameters.N)))
+	encR := []byte(strconv.Itoa(int(parameters.R)))
+	encP := []byte(strconv.Itoa(int(parameters.P)))
+	encoded = append(encoded, sep)
+	encoded = append(encoded, encN...)
+	encoded = append(encoded, sep)
+	encoded = append(encoded, encR...)
+	encoded = append(encoded, sep)
+	encoded = append(encoded, encP...)
 	encHashedValue := []byte(base64.StdEncoding.EncodeToString(hashedValue))
-	encoded := append(encoded, encHashedValue...)
+	encoded = append(encoded, sep)
+	encoded = append(encoded, encHashedValue...)
 	return encoded
 }
 
 func decodeParameters(hashedPassword []byte) (HashConfiguration, []byte, error) {
 	// Guarantee the expected prefix is present
 	if len(hashedPassword) < 4 || !bytes.Equal(hashedPassword[:4], []byte("$4s$")) {
-		return nil, nil, ErrMissingPrefix
+		return HashConfiguration{}, nil, ErrMissingPrefix
 	}
 	// Guarantee that the salt, N, r, p, and hash are all present.
-	parts := bytes.Split(hashedPassword[4:], byte('$'))
+	parts := bytes.Split(hashedPassword[4:], []byte("$"))
 	if len(parts) != 5 {
-		return nil, nil, ErrInvalidHashFormat
+		return HashConfiguration{}, nil, ErrInvalidHashFormat
 	}
 	// Extract and decode the salt back into its raw []byte format.
 	salt := make([]byte, base64.StdEncoding.DecodedLen(len(parts[0])))
 	saltBytesRead, decodeErr := base64.StdEncoding.Decode(salt, parts[0])
 	if decodeErr != nil {
-		return nil, nil, ErrInvalidHashFormat
+		return HashConfiguration{}, nil, ErrInvalidHashFormat
 	}
 	salt = salt[:saltBytesRead]
 	// Parse the numeric values out into actual numeric types.
-	nParam, parseErr1 := strconv.Atoi(parts[1])
-	rParam, parseErr2 := strconv.Atoi(parts[2])
-	pParam, parseErr3 := strconv.Atoi(parts[3])
+	nParam, parseErr1 := strconv.Atoi(string(parts[1]))
+	rParam, parseErr2 := strconv.Atoi(string(parts[2]))
+	pParam, parseErr3 := strconv.Atoi(string(parts[3]))
 	if parseErr1 != nil || parseErr2 != nil || parseErr3 != nil {
-		return nil, nil, ErrInvalidHashFormat
+		return HashConfiguration{}, nil, ErrInvalidHashFormat
 	}
 	// check that the hashed value at the end is properly base64 encoded.
 	decodedHash := make([]byte, base64.StdEncoding.DecodedLen(len(parts[4])))
 	hashBytesRead, decodeErr := base64.StdEncoding.Decode(decodedHash, parts[4])
 	if decodeErr != nil {
-		return nil, nil, ErrInvalidHashFormat
+		return HashConfiguration{}, nil, ErrInvalidHashFormat
 	}
 	// Finally put the parameters parsed into a HashConfiguration and check
 	// that they all satisfy the requirements on each parameter.
 	params, validityErr := NewHashConfiguration(
-		nParam, rParam, pParam, saltBytesRead, hashBytesRead)
+		HashParameter(nParam),
+		HashParameter(rParam),
+		HashParameter(pParam),
+		HashParameter(saltBytesRead),
+		HashParameter(hashBytesRead))
 	if validityErr != nil {
-		return nil, nil, validityErr
+		return HashConfiguration{}, nil, validityErr
 	}
 	return params, salt, nil
 }
@@ -162,7 +173,7 @@ func NewHashConfiguration(n, r, p, saltLen, keyLen HashParameter) (HashConfigura
 	parameters := HashConfiguration{n, r, p, saltLen, keyLen}
 	paramErr := verifyParameterValidity(parameters)
 	if paramErr != nil {
-		return nil, paramErr
+		return HashConfiguration{}, paramErr
 	}
 	return parameters, nil
 }
@@ -181,7 +192,7 @@ func GenerateFromPassword(password []byte, parameters HashConfiguration) ([]byte
 	// Pull some random bytes to use as a salt and make sure we got as much as expected.
 	salt := make([]byte, parameters.SaltLen)
 	bytesRead, randSrcErr := rand.Read(salt)
-	if bytesRead != parameters.SaltLen {
+	if HashParameter(bytesRead) != parameters.SaltLen {
 		return nil, ErrInsufficientRandomData
 	}
 	if randSrcErr != nil {
@@ -189,7 +200,12 @@ func GenerateFromPassword(password []byte, parameters HashConfiguration) ([]byte
 	}
 	// Invoke the scrypt library and augment the hashed value with the hash parameters.
 	hashedValue, hashErr := scrypt.Key(
-		password, parameters.N, salt, parameters.R, parameters.P, parameters.KeyLen)
+		password,
+		salt,
+		int(parameters.N),
+		int(parameters.R),
+		int(parameters.P),
+		int(parameters.KeyLen))
 	if hashErr != nil {
 		return nil, hashErr
 	}
@@ -209,7 +225,12 @@ func CompareHashAndPassword(hashedPassword, password []byte) error {
 	}
 	// Hash the input password with the same parameters used for the already hashed value.
 	hashedValue, hashErr := scrypt.Key(
-		password, parameters.N, salt, parameters.R, parameters.P, parameters.KeyLen)
+		password,
+		salt,
+		int(parameters.N),
+		int(parameters.R),
+		int(parameters.P),
+		int(parameters.KeyLen))
 	if hashErr != nil {
 		return hashErr
 	}
