@@ -9,6 +9,8 @@ coming with functions for authentication functionality, this library does exactl
 2. [Why not use a third-party library?](https://github.com/StratumSecurity/scrypt_auth_go/blob/master/README.md#why-not-use-an-existing-wrapper-library)
 3. [Library Index](https://github.com/StratumSecurity/scrypt_auth_go/blob/master/README.md#index)
 4. [How parameters are encoded](https://github.com/StratumSecurity/scrypt_auth_go/blob/master/README.md#encoding)
+5. [Implementation
+   Requirements](https://github.com/StratumSecurity/scrypt_auth_go/blob/master/README.md#implementation-requirements)
 
 ## Why doesn't Go supply its own?
 
@@ -80,7 +82,7 @@ The format is as follows:
     $4s$salt$N$r$p$h(password)
 
 Here, `$4s$` is a special prefix that will identify this library, and the salt, `N`, `r`, and `p` are prepended
-directly to the output in that order. Each value is separated by the `$` character and none of N, r, or p
+directly to the output in that order as decimals. Each value is separated by the `$` character and none of N, r, or p
 are encoded (e.g. to hex/base64). The salt is encoded to base64. Finally, the output of the scrypt KDF, `h(password)`
 is appended to the output following the final `$` separator. `h(password)` *will be encoded to base64*.
 
@@ -90,8 +92,71 @@ Below are a list of guidelines for implementing functions to parse the output fo
 
 * No assumptions should be made about any fields except for the `$4s$` prefix
 * Use your language's standard library's string splitting function to split pieces on the `$` character
-* Use a standard library function to check that `N` is a power of 2, e.g. using log(base=2, N)
+* Use a standard library function to check that `N` is a power of 2. More on this in the `Parameter Restrictions` section
 * Check that `r * p > 0` to prevent incorrect behavior resulting from multiplying large `r` and `p`
 * Check that `r * p < 1073741824` (`1073741824` = `2^30`)
 * Derive the `keyLen` parameter from the length of the decoded `h(password)`, i.e. `keyLen = len(b64_decode(b64(h(password))))`
 * Implement a *constant time comparison* between the hash of the input password and the previously hashed value
+
+## Implementation Requirements 
+
+### Scrypt parameter values
+
+* `N` *must* satisfy `N >= 4` and must be a power of 2
+* `r` *must* satisfy `r > 0` and `r * p < 1073741824` (where 1073741823 = 2^30)
+* `p` *must* satisfy `p > 0` and `r * p < 1073741824` (where 1073741823 = 2^30)
+* Salts *must* be at least 8 bytes long
+* Key lengths *must* be at least 32 bytes long
+
+### General rules
+
+* Padding bytes (`=`) at the end of base64-encoded values should *not* be removed
+* `N`, `r`, and `p` *must* be encoded as decimals. Do not use another base.
+* A constant-time comparison should be used to check if a hashed input password equals a previously hashed password
+
+### Testing N
+
+When testing the `N` parameter for scrypt, your implementation must guarantee that
+`N` satisfies `N >= 4` and that `N` is a power of two (2). There are two recommended ways to do this.
+
+The first way is to cast `N` to an unsigned integer 
+(if you are using a signed integer, as Go's scrypt interface requires)
+and use the following expression
+
+    N > 1 && ((N & (N-1)) > 0)
+
+Which will be true _if and only if_ N is a power of 2.
+
+The second approach is to use a math library's logarithm function, such as
+[Go's math.Log2](https://golang.org/pkg/math/#Log2) to compute the exponent that
+satisfies `2^x = N`.  You then have to check that the computed value `x` is a positive integer.
+Beware of cases where confusion arises due to the handling of floating point numbers
+(i.e. where something like 3.00000001 != 3.0).
+
+You should carefully consider your language's handling of types, library efficiency,
+and handling of floating-point values before making your decision.
+
+### Implementing constant-time comparisons
+
+[Constant time comparisons](http://rdist.root.org/2010/01/07/timing-independent-array-comparison/)
+are used to prevent timing attacks that can be used to determine parts of passwords
+that could ultimately lead to completely reversing a hash.
+
+The example below is an implementation of a constant-time comparison function in Python.
+
+```py
+def constant_time_compare(expected, input):
+  if len(input) != len(expected):
+    return False
+
+  # XOR the two strings and accumulate any differing bits with OR
+  mismatched = 0
+  for x, y in zip(input, expected):
+    mismatched |= ord(x) ^ ord(y)
+  return mismatched == 0
+```
+
+Your language may include an implementation of such a function for strings/byte arrays,
+like the
+[ConstantTimeCompare function in crypto/subtle](https://golang.org/pkg/crypto/subtle/#ConstantTimeCompare)
+used by the implementation included in this library.
