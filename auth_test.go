@@ -77,8 +77,12 @@ func TestEncodeParameters(t *testing.T) {
 	if bytes.Equal(testSalt, parts[0]) {
 		t.Error("\t\tThe encoded salt is the same as the test data; it should be encoded")
 	}
-	salt := make([]byte, 4)
-	base64.StdEncoding.Decode(salt, parts[0])
+	salt := make([]byte, base64.StdEncoding.DecodedLen(len(parts[0])))
+	bytesRead, decodeErr := base64.StdEncoding.Decode(salt, parts[0])
+	if decodeErr != nil {
+		t.Fatalf("\t\tFailed to decode the salt. Got error %v", decodeErr)
+	}
+	salt = salt[:bytesRead]
 	if !bytes.Equal(testSalt, salt) {
 		t.Error("\t\tThe decoded salt does not equal the original")
 	}
@@ -101,8 +105,12 @@ func TestEncodeParameters(t *testing.T) {
 	if bytes.Equal(testHash, parts[4]) {
 		t.Error("\t\tThe encoded hash is the same as the test data; it should be encoded")
 	}
-	hash := make([]byte, 32)
-	base64.StdEncoding.Decode(hash, parts[4])
+	hash := make([]byte, base64.StdEncoding.DecodedLen(len(parts[4])))
+	bytesRead, decodeErr = base64.StdEncoding.Decode(hash, parts[4])
+	if decodeErr != nil {
+		t.Fatalf("\t\tFailed to decode hashed value. Got error %v", decodeErr)
+	}
+	hash = hash[:bytesRead]
 	if !bytes.Equal(testHash, hash) {
 		t.Error("\t\tThe decoded hash does not equal the original")
 	}
