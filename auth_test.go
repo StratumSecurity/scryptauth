@@ -236,3 +236,64 @@ func TestCompareHashAndPassword(t *testing.T) {
 	// The case that passwords actually match will be tested in an integration test
 	// with GenerateFromPassword.
 }
+
+/**
+ * Integration tests
+ */
+
+func TestDecodingEncodedParameters(t *testing.T) {
+	t.Log("integration encodeParameters <-> decodeParameters")
+
+	t.Log("\tDecoding should be the inverse of encoding")
+	testHashedValue := []byte("ABCDEF0123456789ABCDEF0123456789")
+	testSalt := []byte("TESTSALT")
+	testParams := HashConfiguration{16384, 8, 1, 8, 32} // N, r, p, saltLen, keyLen
+	encoded := encodeParameters(tesetHashedValue, testSalt, testParams)
+	decodedParams, decodedSalt, err := decodeParameters(encoded)
+	if err != nil {
+		t.Errorf("\t\tExpected decoding to not return an error. Got %v", err)
+	} else {
+		if !bytes.Equal(decodedSalt, testSalt) {
+			t.Error("\t\tDecoded salt does not equal original")
+		}
+		if decodedParams.N != testParams.N {
+			t.Errorf("\t\tDecoded N (%d) does not equal original (%d)\n", decodedParams.N, testParams.N)
+		}
+		if decodedParams.R != testParams.R {
+			t.Errorf("\t\tDecoded r (%d) does not equal original (%d)\n", decodedParams.R, testParams.R)
+		}
+		if decodedParams.P != testParams.P {
+			t.Errorf("\t\tDecoded p (%d) does not equal original (%d)\n", decodedParams.P, testParams.P)
+		}
+		if decodedParams.SaltLen != testParams.SaltLen {
+			t.Errorf("\t\tDecoded saltLen (%d) does not equal original (%d)\n", decodedParams.SaltLen, testParams.SaltLen)
+		}
+		if decodedParams.KeyLen != testParams.KeyLen {
+			t.Errorf("\t\tDecoded keyLen (%d) does not equal original (%d)\n", decodedParams.KeyLen, testParams.KeyLen)
+		}
+	}
+}
+
+func TestComparingGeneratedPasswords(t *testing.T) {
+	t.Log("integration GenerateFromPassword <-> CompareHashAndPassword")
+
+	t.Log("\tA generated hashed value should validate against the password provided")
+	testPassword := []byte("t3st!nG12345")
+	testParams := DefaultHashConfiguration()
+	generated, generateErr := GenerateFromPassword(testPassword, testParams)
+	if generateErr != nil {
+		t.Errorf("\t\tExpected GenerateFromPassword to return no errors. Got %v", generateErr)
+	} else {
+		compareErr := CompareHashAndPassword(generated, testPassword)
+		if compareErr != nil {
+			t.Errorf("\t\tExpected CompareHashAndPassword to return no errors. Got %v", compareErr)
+		}
+	}
+
+	t.Log("\tIncorrect passwords should not be validated without error")
+	incorrectPassword := []byte("t4st!nG12345") // t4 instead of t3
+	compareErr2 := CompareHashAndPassword(generated, incorrectPassword)
+	if compareErr2 == nil {
+		t.Error("\t\tExpected CompareHashAndPassword to return an error for incorrect passwords")
+	}
+}
