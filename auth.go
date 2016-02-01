@@ -21,8 +21,8 @@ const (
 	MinP           HashParameter = 1          // 2^0,  the minimum p value possible, corresponding to 1 <= r <= MaxR
 	MaxP           HashParameter = 1073741823 // 2^30 - 1, the maximum p value possible, requiring r = 1
 	MinKeyLen      HashParameter = 32         // the minimum number of bytes a key should contain, corresponds to 256 bits
-	MinSaltLen     HashParameter = 4          // the minimum length of a salt, adding 256^4 possibilities per password
-	DefaultSaltLen HashParameter = 4          // the default length of a salt, adding 256^4 possibilities per password
+	MinSaltLen     HashParameter = 8          // the minimum length of a salt, 8 bytes
+	DefaultSaltLen HashParameter = 8          // the default length of a salt, 8 bytes
 	DefaultKeyLen  HashParameter = 32         // the default number of bytes a key will contain
 	DefaultN       HashParameter = 32768      // 2^15, a default N value. 2^14 was the recommended value in 2009
 	DefaultR       HashParameter = 8          // the default r value recommended in 2009 (pertains to parallelization)
@@ -35,7 +35,7 @@ var (
 	ErrInvalidPValue             = errors.New("scrypt/auth: p parameter must be between 2^0 and 2^30 inclusive")
 	ErrInvalidRPValues           = errors.New("scrypt/auth: The r and p parameters must be such that r * p < 2^30")
 	ErrKeyTooShort               = errors.New("scrypt/auth: The minimum allowed key length is 32 bytes, or 256 bits")
-	ErrSaltTooShort              = errors.New("scrypt/auth: The minimum allowed salt length is 4 bytes or 32 bits")
+	ErrSaltTooShort              = errors.New("scrypt/auth: The minimum allowed salt length is 8 bytes or 64 bits")
 	ErrInvalidHashFormat         = errors.New("scrypt/auth: The expected hashed value format is $4s$salt$N$r$p$hashedPassword")
 	ErrMismatchedHashAndPassword = errors.New("scrypt/auth: The supplied password does not match the hashed secret")
 	ErrMissingPrefix             = errors.New("scrypt/auth: Hashed password is not prefixed with the expected $4s$ sequence")
