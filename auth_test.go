@@ -3,6 +3,7 @@ package auth
 import (
 	"bytes"
 	"encoding/base64"
+	"strconv"
 	"testing"
 )
 
@@ -32,7 +33,7 @@ func TestNewHashConfiguration(t *testing.T) {
 	}
 
 	t.Log("\tIt should produce errors for parameters that don't satisfy the requirements")
-	failingTests := []HashConfigurations{
+	failingTests := []HashConfiguration{
 		// N, r, p, saltLen, keyLen
 		{33, 8, 1, 4, 32},         // N not quite a power of 2
 		{32, -10, 1, 4, 32},       // r < 0
@@ -58,7 +59,7 @@ func TestEncodeParameters(t *testing.T) {
 	testSalt := []byte{255, 254, 253, 252}
 	testHash := make([]byte, 32)
 	for i := 0; i < 32; i++ {
-		testHash[i] = i
+		testHash[i] = byte(i)
 	}
 	encoded := encodeParameters(testHash, testSalt, testParams)
 	if !bytes.HasPrefix(encoded, []byte("$4s$")) {
@@ -67,7 +68,7 @@ func TestEncodeParameters(t *testing.T) {
 
 	t.Log("\tIt should contain a total of five $-separated parts after the prefix")
 	encoded = encoded[4:]
-	parts := bytes.Split(encoded, byte('$'))
+	parts := bytes.Split(encoded, []byte("$"))
 	if len(parts) != 5 { // salt, N, r, p, hash
 		t.Error("\t\tExpected encoded value to consist of five parts")
 	}
@@ -83,15 +84,15 @@ func TestEncodeParameters(t *testing.T) {
 	}
 
 	t.Log("\tIt should have encoded N, r, and p directly as strings")
-	n, parseErr := strconv.Atoi(parts[1])
+	_, parseErr := strconv.Atoi(string(parts[1]))
 	if parseErr != nil {
 		t.Error("\t\tN was not encoded as a string")
 	}
-	r, parseErr := strconv.Atoi(parts[2])
+	_, parseErr = strconv.Atoi(string(parts[2]))
 	if parseErr != nil {
 		t.Error("\t\tr was not encoded as a string")
 	}
-	p, parseErr := strconv.Atoi(parts[3])
+	_, parseErr = strconv.Atoi(string(parts[3]))
 	if parseErr != nil {
 		t.Error("\t\tp was not encoded as a string")
 	}
@@ -134,7 +135,7 @@ func TestDecodeParameters(t *testing.T) {
 		{"$4s$abcd$123$8$1$ABCDEFABCDEFABCDEFABCDEFABCDEF01", ErrInvalidNValue},
 		{"$4s$abcd$16384$1073741824$1$ABCDEFABCDEFABCDEFABCDEFABCDEF01", ErrInvalidRValue},
 		{"$4s$abcd$16384$1$1073741824$ABCDEFABCDEFABCDEFABCDEFABCDEF01", ErrInvalidPValue},
-		{"$4s$abcd$16384$32768$32768$ABCDEFABCDEFABCDEFABCDEFABCDEF01", ErrInvalidRPValueS},
+		{"$4s$abcd$16384$32768$32768$ABCDEFABCDEFABCDEFABCDEFABCDEF01", ErrInvalidRPValues},
 		{"$4s$abcd$16384$8$1$tooshort", ErrKeyTooShort},
 	}
 	for i, test := range tests {
@@ -145,7 +146,7 @@ func TestDecodeParameters(t *testing.T) {
 	}
 
 	t.Log("\tIt should produce a valid HashConfiguration and salt if decoding succeeds")
-	params, salt, err := decodeParameters("$4s$abcdef01$16384$8$1$ABCDEFABCDEFABCDEFABCDEFABCDEF01")
+	params, salt, err := decodeParameters([]byte("$4s$abcdef01$16384$8$1$ABCDEFABCDEFABCDEFABCDEFABCDEF01"))
 	if err != nil {
 		t.Error(err)
 	} else {
@@ -169,7 +170,7 @@ func TestGenerateFromPassword(t *testing.T) {
 	t.Log("function GenerateFromPassword")
 
 	t.Log("\tIt should return an error if a parameter is invalid")
-	failingTests := []HashConfigurations{
+	failingTests := []HashConfiguration{
 		// N, r, p, saltLen, keyLen
 		{33, 8, 1, 4, 32},         // N not quite a power of 2
 		{32, -10, 1, 4, 32},       // r < 0
@@ -248,7 +249,7 @@ func TestDecodingEncodedParameters(t *testing.T) {
 	testHashedValue := []byte("ABCDEF0123456789ABCDEF0123456789")
 	testSalt := []byte("TESTSALT")
 	testParams := HashConfiguration{16384, 8, 1, 8, 32} // N, r, p, saltLen, keyLen
-	encoded := encodeParameters(tesetHashedValue, testSalt, testParams)
+	encoded := encodeParameters(testHashedValue, testSalt, testParams)
 	decodedParams, decodedSalt, err := decodeParameters(encoded)
 	if err != nil {
 		t.Errorf("\t\tExpected decoding to not return an error. Got %v", err)
