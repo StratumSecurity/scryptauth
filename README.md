@@ -7,10 +7,10 @@ coming with functions for authentication functionality, this library does exactl
 
 1. [Why do we need a wrapper library?](https://github.com/StratumSecurity/scrypt_auth_go/blob/master/README.md#why-doesnt-go-supply-its-own)
 2. [Why not use a third-party library?](https://github.com/StratumSecurity/scrypt_auth_go/blob/master/README.md#why-not-use-an-existing-wrapper-library)
-3. [Library Index](https://github.com/StratumSecurity/scrypt_auth_go/blob/master/README.md#index)
-4. [How parameters are encoded](https://github.com/StratumSecurity/scrypt_auth_go/blob/master/README.md#encoding)
-5. [Implementation
-   Requirements](https://github.com/StratumSecurity/scrypt_auth_go/blob/master/README.md#implementation-requirements)
+3. [Library index](https://github.com/StratumSecurity/scrypt_auth_go/blob/master/README.md#index)
+4. [Example usage](https://github.com/StratumSecurity/scrypt_auth_go/blob/master/README.md#example-usage)
+5. [How parameters are encoded](https://github.com/StratumSecurity/scrypt_auth_go/blob/master/README.md#encoding)
+6. [Implementation Requirements](https://github.com/StratumSecurity/scrypt_auth_go/blob/master/README.md#implementation-requirements)
 
 ## Why doesn't Go supply its own?
 
@@ -105,7 +105,7 @@ Produces a set of parameters that are safe to use to configure scrypt with.
 [View source](https://github.com/StratumSecurity/scrypt_auth_go/blob/master/auth.go#L172)
 
 ```go
-func NewHashConfiguration(n, r, p, saltLen, keyLen HashParameter) (HashConfiguration, error)
+func NewHashConfiguration(n, r, p, saltLen, keyLen int) (HashConfiguration, error)
 ```
 
 Produces a new set of parameters with the values provided. It will check that the
@@ -155,6 +155,12 @@ type HashConfiguration struct {
 }
 ```
 
+## Example usage
+
+```go
+
+```
+
 ## Encoding
 
 ### Parameters
@@ -162,7 +168,7 @@ type HashConfiguration struct {
 The scrypt algorithm accepts three parameters that are used to configure its complexity, and can be changed
 to hash new passwords more strongly as computational resources improve. It also accepts data obtained from a random source and a key length to stretch (if necessary) the output length to).
 
-1. `salt`: A cryptographically-secure random salt (random bytes) is appended to add randomness. At least 4 truly random bytes are suggested.
+1. `salt`: A cryptographically-secure random salt (random bytes) is appended to add randomness. At least 8 truly random bytes are suggested.
 2. `N`: This is a CPU/memory cost parameter. It must be a power of 2 greater than 1. 16384 is commonly used.
 3. `r` and `p`: These parameters configure scrypt's parallelized efficiency. They must satisfy `r * p < 2^30`. r = 8 and p = 1 were commonly used in 2009.
 4. `keyLen`: The number of bytes the output key should be stretched to (if at all). This value is often 32, corresponding to an AES key length.
