@@ -1,5 +1,7 @@
 # Scrypt Password Authentication
 
+[ ![Codeship Status for StratumSecurity/scrypt_auth_go](https://codeship.com/projects/d31235b0-ab4f-0133-b1ca-7eeaa3e554a6/status?branch=master)](https://codeship.com/projects/131310)
+
 In lieu of Golang's [official scrypt implementation](https://godoc.org/golang.org/x/crypto/scrypt)
 coming with functions for authentication functionality, this library does exactly that.
 
