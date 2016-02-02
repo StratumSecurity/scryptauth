@@ -157,8 +157,66 @@ type HashConfiguration struct {
 
 ## Example usage
 
-```go
+Below is a complete demonstration of how to use this library.
+In the comments, you'll find notes about how you may wish to handle different
+errors in the context of a web application.
 
+You can run this program by saving it as `example.go` and then running
+
+    go get github.com/StratumSecurity/scryptauth
+    go run example.go
+
+```go
+package main
+
+import (
+	"fmt"
+	auth "github.com/StratumSecurity/scryptauth"
+)
+
+func main() {
+	// Get the user's password from some source of input,
+	// probably the body of an HTTP request.
+	password := "Pr3tt!3_D3c3nT"
+
+	// Set some relatively high parameters for scrypt.
+	N := 1 << 16 // 2^16
+	r := 10
+	p := 2
+	saltLen := 12
+	keyLen := 64
+
+	parameters, err := auth.NewHashConfiguration(N, r, p, saltLen, keyLen)
+	if err != nil {
+		// An error may be returned if we didn't satisfy some requirement
+		// for the scrypt parameters
+		panic(err)
+	}
+
+	hashed, err := auth.GenerateFromPassword([]byte(password), parameters)
+	if err != nil {
+		// An error may be returned if scrypt encounters an error or
+		// if there are not enough random bytes available to fill the salt.
+		// We could either try to wait for more random bytes or ask the user
+		// to try again in a moment if we need more random bytes.
+		panic(err)
+	}
+
+	// Later, we get a request to log in and another password becomes input.
+	inputPassword := "Pr3tt!3_D3c3nT"
+	compareErr := auth.CompareHashAndPassword(hashed, []byte(inputPassword))
+	if compareErr == auth.ErrMismatchedHashAndPassword {
+		// The passwords didn't match. Don't authenticate the user.
+		panic(compareErr)
+	} else if compareErr != nil {
+		// Decoding parameters failed. We should rehash the password
+		// with a proper, secure configuration.
+		panic(compareErr)
+	} else {
+		// Nothing went wrong. The passwords match.
+		fmt.Println("Passwords matched!")
+	}
+}
 ```
 
 ## Encoding
