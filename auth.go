@@ -140,11 +140,11 @@ func decodeParameters(hashedPassword []byte) (HashConfiguration, []byte, error) 
 	// Finally put the parameters parsed into a HashConfiguration and check
 	// that they all satisfy the requirements on each parameter.
 	params, validityErr := NewHashConfiguration(
-		HashParameter(nParam),
-		HashParameter(rParam),
-		HashParameter(pParam),
-		HashParameter(saltBytesRead),
-		HashParameter(hashBytesRead))
+		nParam,
+		rParam,
+		pParam,
+		saltBytesRead,
+		hashBytesRead)
 	if validityErr != nil {
 		return HashConfiguration{}, nil, validityErr
 	}
@@ -167,10 +167,16 @@ func DefaultHashConfiguration() HashConfiguration {
 /**
  * Create a new HashConfiguration and verify that the fields provided meet scrypt's
  * requirements.  It is highly recommended that this function be used rather than creating
- * a configuration by hand.
+ * a configuration by hand.  Accepts `int`s as input for user convenience
  */
-func NewHashConfiguration(n, r, p, saltLen, keyLen HashParameter) (HashConfiguration, error) {
-	parameters := HashConfiguration{n, r, p, saltLen, keyLen}
+func NewHashConfiguration(n, r, p, saltLen, keyLen int) (HashConfiguration, error) {
+	parameters := HashConfiguration{
+		HashParameter(n),
+		HashParameter(r),
+		HashParameter(p),
+		HashParameter(saltLen),
+		HashParameter(keyLen),
+	}
 	paramErr := verifyParameterValidity(parameters)
 	if paramErr != nil {
 		return HashConfiguration{}, paramErr

@@ -24,7 +24,7 @@ func TestNewHashConfiguration(t *testing.T) {
 	}
 	for i, test := range passingTests {
 		_, err := NewHashConfiguration(
-			test.N, test.R, test.P, test.SaltLen, test.KeyLen)
+			int(test.N), int(test.R), int(test.P), int(test.SaltLen), int(test.KeyLen))
 		if err != nil {
 			t.Errorf("\t\tError in test #%d: %v", i, err)
 		}
@@ -41,7 +41,7 @@ func TestNewHashConfiguration(t *testing.T) {
 	}
 	for i, test := range failingTests {
 		_, err := NewHashConfiguration(
-			test.N, test.R, test.P, test.SaltLen, test.KeyLen)
+			int(test.N), int(test.R), int(test.P), int(test.SaltLen), int(test.KeyLen))
 		if err == nil {
 			t.Errorf("\t\tExpected error in test #%d\n", i)
 		}
