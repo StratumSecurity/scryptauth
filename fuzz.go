@@ -1,19 +1,19 @@
 package auth
 
+func Fuzz(data []byte) int {
+    // Setup initial values
+    defaultHashConfiguration := DefaultHashConfiguration()
+    hashedPassword, _ := GenerateFromPassword([]byte("t3st!nG12345"), defaultHashConfiguration)
 
-func Fuzz(data []byte) int  {
+    // Fuzz GenerateFromPassword function
+    _, hashErr := GenerateFromPassword(data, defaultHashConfiguration)
 
-  testPassword := []byte("t3st!nG12345")
-	testParams := DefaultHashConfiguration()
-	generated, generateErr := GenerateFromPassword(data, testParams)
+    // Fuzz CompareHashAndPassword function
+    compareErr := CompareHashAndPassword(hashedPassword, data)
 
-	if generateErr != nil {
-		panic(generateErr)
-	} else {
-		compareErr := CompareHashAndPassword(generated, testPassword)
-		if compareErr != nil {
-			panic(compareErr)
-		}
-  return 0
-	}
+    if hashErr == nil || compareErr == nil {
+        return 1
+    } else {
+        return 0
+    }
 }
