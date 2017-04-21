@@ -337,6 +337,7 @@ $ go get github.com/dvyukov/go-fuzz/go-fuzz-build
 ```
 $ go-fuzz-build github.com/StratumSecurity/scryptauth
 $ go-fuzz -bin=./auth-fuzz.zip -workdir=fuzz```
+``` 
 
 #### Adjusting the hash work factor
 
