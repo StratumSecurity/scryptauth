@@ -40,7 +40,7 @@ StratumSecurity has opted to create its own library for internal use so that str
 placed on its implementation and so that guarantees can be made internally about its development.
 
 For example, this library will fully document the decisions made regarding how parameters are encoded into
-and decoded from hashed values. 
+and decoded from hashed values.
 
 ## Index
 
@@ -260,7 +260,7 @@ Below are a list of guidelines for implementing functions to parse the output fo
 * Derive the `keyLen` parameter from the length of the decoded `h(password)`, i.e. `keyLen = len(b64_decode(b64(h(password))))`
 * Implement a *constant time comparison* between the hash of the input password and the previously hashed value
 
-## Implementation Requirements 
+## Implementation Requirements
 
 ### Scrypt parameter values
 
@@ -281,7 +281,7 @@ Below are a list of guidelines for implementing functions to parse the output fo
 When testing the `N` parameter for scrypt, your implementation must guarantee that
 `N` satisfies `N >= 4` and that `N` is a power of two (2). There are two recommended ways to do this.
 
-The first way is to cast `N` to an unsigned integer 
+The first way is to cast `N` to an unsigned integer
 (if you are using a signed integer, as Go's scrypt interface requires)
 and use the following expression
 
@@ -322,3 +322,24 @@ Your language may include an implementation of such a function for strings/byte 
 like the
 [ConstantTimeCompare function in crypto/subtle](https://golang.org/pkg/crypto/subtle/#ConstantTimeCompare)
 used by the implementation included in this library.
+
+### Fuzzing
+
+Go-fuzz is setup to fuzz the password hashing and comparison code in scryptauth.
+
+To build and fuzz the library use the following instructions:
+
+```
+$ go get github.com/dvyukov/go-fuzz/go-fuzz
+$ go get github.com/dvyukov/go-fuzz/go-fuzz-build
+```
+
+```
+$ go-fuzz-build github.com/StratumSecurity/scryptauth
+$ go-fuzz -bin=./auth-fuzz.zip -workdir=fuzz```
+
+#### Adjusting the hash work factor
+
+To get the number of executions to properly fuzz the library the work factor. This change should never be committed!
+
+`DefaultN       HashParameter = 32      // 2^15, a default N value. 2^14 was the recommended value in 2009`
