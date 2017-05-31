@@ -47,10 +47,10 @@ and decoded from hashed values.
 1. [Constants](https://github.com/StratumSecurity/scrypt_auth_go/blob/master/README.md#constants)
 2. [Variables](https://github.com/StratumSecurity/scrypt_auth_go/blob/master/README.md#variables)
 3. [Functions](https://github.com/StratumSecurity/scrypt_auth_go/blob/master/README.md#functions)
-  * [DefaultHashConfiguration](https://github.com/StratumSecurity/scrypt_auth_go/blob/master/README.md#defaulthashconfiguration)
-  * [NewHashConfiguration](https://github.com/StratumSecurity/scrypt_auth_go/blob/master/README.md#newhashconfiguration)
-  * [GenerateFromPassword](https://github.com/StratumSecurity/scrypt_auth_go/blob/master/README.md#generatefrompassword)
-  * [CompareHashAndPassword](https://github.com/StratumSecurity/scrypt_auth_go/blob/master/README.md#comparehashandpassword)
+    * [DefaultHashConfiguration](https://github.com/StratumSecurity/scrypt_auth_go/blob/master/README.md#defaulthashconfiguration)
+    * [NewHashConfiguration](https://github.com/StratumSecurity/scrypt_auth_go/blob/master/README.md#newhashconfiguration)
+    * [GenerateFromPassword](https://github.com/StratumSecurity/scrypt_auth_go/blob/master/README.md#generatefrompassword)
+    * [CompareHashAndPassword](https://github.com/StratumSecurity/scrypt_auth_go/blob/master/README.md#comparehashandpassword)
 4. [Types](https://github.com/StratumSecurity/scrypt_auth_go/blob/master/README.md#types)
 
 ### Constants
